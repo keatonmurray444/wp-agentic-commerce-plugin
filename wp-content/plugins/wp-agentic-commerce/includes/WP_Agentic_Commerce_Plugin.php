@@ -15,7 +15,18 @@ if ( ! defined( 'ABSPATH' ) ) exit;
 class WP_Agentic_Commerce_Plugin {
 
     public function __construct() {
+        $this->enqueue_admin_styles();
         $this->init_hooks();
+    }
+
+    // Enqueue stylesheet
+    private function enqueue_admin_styles() {
+        wp_enqueue_style(
+            'agentic-commerce-admin-style',
+            plugin_dir_url(__FILE__) . '../assets/css/agentic-commerce-style.css',
+            [],
+        '1.0.0'
+        );
     }
 
     private function init_hooks() {
@@ -28,7 +39,7 @@ class WP_Agentic_Commerce_Plugin {
         add_action('init', function() {
             new WP_Agentic_Commerce_Meta_Fields();
         });
-    }
+    }   
 
     // Initialize all hooks for the plugin (you may add more hooks to extend functionality)
     public function run() {
