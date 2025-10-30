@@ -14,16 +14,25 @@ if ( ! defined( 'ABSPATH' ) ) exit;
 
 class WP_Agentic_Commerce_Plugin {
 
-    // Boot the API layer
     public function __construct() {
+        $this->init_hooks();
+    }
+
+    private function init_hooks() {
+        // Hook to initiazize API Layer
         add_action( 'init', function() {
             new WP_Agentic_Commerce_API();
+        });
+
+        // Hook to initialize custom Woocommerce meta fields
+        add_action('init', function() {
+            new WP_Agentic_Commerce_Meta_Fields();
         });
     }
 
     // Initialize all hooks for the plugin (you may add more hooks to extend functionality)
     public function run() {
-        self::register_admin_hooks();
+        $this->register_admin_hooks();
     }
 
     private function register_admin_hooks() {
