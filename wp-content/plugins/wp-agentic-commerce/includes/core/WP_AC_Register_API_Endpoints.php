@@ -23,6 +23,8 @@
  *    - Creates WooCommerce orders and returns a checkout URL.
  *    - Callback: WP_AC_Delegate_Payment_Controller::delegate_payment
  *    - Permissions: public (can be customized)
+ * 
+ * 3. POST /wp-json/agentic-commerce/v1/create-sessions
  *
  * Example usage:
  *   GET  /wp-json/agentic-commerce/v1/products/feed
@@ -31,9 +33,11 @@
  * @package WPAgenticCommerce\Core
  */
 
-namespace WPAgenticCommerce\Core; 
+namespace WPAgenticCommerce\Core;
+
 use WPAgenticCommerce\Controllers\WP_AC_Product_Feed_Controller;
 use WPAgenticCommerce\Controllers\WP_AC_Delegate_Payment_Controller;
+use WPAgenticCommerce\Controllers\WP_AC_Agentic_Checkout_Controller;
 
 if ( ! defined( 'ABSPATH' ) ) exit;
 
@@ -60,6 +64,11 @@ class WP_AC_Register_API_Endpoints {
             'permission_callback' => '__return_true',
         ]);
 
-        // 
+        // Register Agentic Checkout API URL
+        register_rest_route('agentic-commerce/v1', '/checkout_sessions', [
+            'methods' => 'POST',
+            'callback' => [ WP_AC_Agentic_Checkout_Controller::class, 'create_checkout_session' ],
+            'permission_callback' => '__return_true',
+        ]);
     }
 }
