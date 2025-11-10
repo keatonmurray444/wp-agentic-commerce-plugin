@@ -55,6 +55,7 @@
 
 namespace WPAgenticCommerce\Controllers; 
 use WP_REST_Request;
+use WP_Error;
 
 if ( ! defined('ABSPATH') ) exit;
 
