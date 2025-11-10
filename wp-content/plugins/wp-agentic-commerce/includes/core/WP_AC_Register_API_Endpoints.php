@@ -1,12 +1,34 @@
 <?php
 
 /**
- * Core REST API Handler Class for registering API Endpoints
- * 
+ * WP_AC_Register_API_Endpoints
+ *
+ * Core REST API handler for the WP Agentic Commerce plugin.
+ * This class is responsible for registering all custom API endpoints
+ * used by the plugin, including product feeds and delegated payment flows.
+ *
  * Responsibilities:
- * - Registers API endpoints
- * - Hooks into WordPress REST API initialization
- * - Includes request validation and authentication callbacks
+ * - Hook into WordPress REST API initialization (`rest_api_init`).
+ * - Register custom API routes/endpoints with their callbacks.
+ * - Define permission callbacks for endpoints.
+ * - Serve as the central entry point for plugin API functionality.
+ *
+ * Endpoints registered:
+ * 1. GET /wp-json/agentic-commerce/v1/products/feed
+ *    - Returns a structured product feed for external integrations.
+ *    - Callback: WP_AC_Product_Feed_Controller::get_products
+ *    - Permissions: public (can be customized)
+ *
+ * 2. POST /wp-json/agentic-commerce/v1/delegate-payment
+ *    - Creates WooCommerce orders and returns a checkout URL.
+ *    - Callback: WP_AC_Delegate_Payment_Controller::delegate_payment
+ *    - Permissions: public (can be customized)
+ *
+ * Example usage:
+ *   GET  /wp-json/agentic-commerce/v1/products/feed
+ *   POST /wp-json/agentic-commerce/v1/delegate-payment
+ *
+ * @package WPAgenticCommerce\Core
  */
 
 namespace WPAgenticCommerce\Core; 
@@ -37,5 +59,7 @@ class WP_AC_Register_API_Endpoints {
             'callback' => [ WP_AC_Delegate_Payment_Controller::class, 'delegate_payment'],
             'permission_callback' => '__return_true',
         ]);
+
+        // 
     }
 }
