@@ -17,8 +17,8 @@
  * @package WPAgenticCommerce
  */
 
-namespace WPAgenticCommerce;
-class WP_Agentic_Commerce_Meta_Fields {
+namespace WPAgenticCommerce\Helpers;
+class WP_AC_WC_Meta_Fields {
     public function __construct() {
         $this->init_hooks();
     }

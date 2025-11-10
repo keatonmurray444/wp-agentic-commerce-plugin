@@ -9,14 +9,24 @@ class ComposerStaticInit0214d34b41a4175c957c7560be553425
     public static $prefixLengthsPsr4 = array (
         'W' => 
         array (
-            'WPAgenticCommerce\\' => 18,
+            'WPAgenticCommerce\\Helpers\\' => 26,
+            'WPAgenticCommerce\\Core\\' => 23,
+            'WPAgenticCommerce\\Controllers\\' => 30,
         ),
     );
 
     public static $prefixDirsPsr4 = array (
-        'WPAgenticCommerce\\' => 
+        'WPAgenticCommerce\\Helpers\\' => 
         array (
-            0 => __DIR__ . '/../..' . '/includes',
+            0 => __DIR__ . '/../..' . '/includes/helpers',
+        ),
+        'WPAgenticCommerce\\Core\\' => 
+        array (
+            0 => __DIR__ . '/../..' . '/includes/core',
+        ),
+        'WPAgenticCommerce\\Controllers\\' => 
+        array (
+            0 => __DIR__ . '/../..' . '/includes/controllers',
         ),
     );
 

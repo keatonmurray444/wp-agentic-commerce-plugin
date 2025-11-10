@@ -9,13 +9,13 @@
  * - Includes request validation and authentication callbacks
  */
 
-namespace WPAgenticCommerce; 
-use WPAgenticCommerce\WP_Agentic_Commerce_Product_Feed_Controller;
-use WPAgenticCommerce\WP_Agentic_Commerce_Delegate_Payment_Controller;
+namespace WPAgenticCommerce\Core; 
+use WPAgenticCommerce\Controllers\WP_AC_Product_Feed_Controller;
+use WPAgenticCommerce\Controllers\WP_AC_Delegate_Payment_Controller;
 
 if ( ! defined( 'ABSPATH' ) ) exit;
 
-class WP_Agentic_Commerce_API_Endpoints {
+class WP_AC_Register_API_Endpoints {
      // Hook into the REST API initialization to register the plugin's custom routes
     public function __construct() {
         add_action( 'rest_api_init', [ $this, 'register_api_routes' ] );
@@ -27,14 +27,14 @@ class WP_Agentic_Commerce_API_Endpoints {
         // Register Product Feed API URL
         register_rest_route( 'agentic-commerce/v1', '/products/feed', [
             'methods'  => 'GET',
-            'callback' => [ WP_Agentic_Commerce_Product_Feed_Controller::class, 'get_products' ],
+            'callback' => [ WP_AC_Product_Feed_Controller::class, 'get_products' ],
             'permission_callback' => '__return_true', 
         ]);
 
         // Register Delegated Payment API URL
         register_rest_route('agentic-commerce/v1', '/delegate-payment', [
             'methods' => 'POST', 
-            'callback' => [ WP_Agentic_Commerce_Delegate_Payment_Controller::class, 'delegate_payment'],
+            'callback' => [ WP_AC_Delegate_Payment_Controller::class, 'delegate_payment'],
             'permission_callback' => '__return_true',
         ]);
     }

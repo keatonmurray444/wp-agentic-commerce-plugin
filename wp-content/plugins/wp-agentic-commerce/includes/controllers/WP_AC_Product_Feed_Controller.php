@@ -1,11 +1,11 @@
 <?php
 
-namespace WPAgenticCommerce; 
+namespace WPAgenticCommerce\Controllers; 
 use WP_REST_Request;
 
 if ( ! defined( 'ABSPATH' ) ) exit;
 
-class WP_Agentic_Commerce_Product_Feed_Controller {
+class WP_AC_Product_Feed_Controller {
         // Product Feed Schema
     public static function get_products( WP_REST_Request $request ) {
 

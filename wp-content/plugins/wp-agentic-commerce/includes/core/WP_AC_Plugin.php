@@ -7,12 +7,13 @@
  * API and commerce features are delegated to separate classes for modularity.
  */
 
-namespace WPAgenticCommerce;
-use WPAgenticCommerce\WP_Agentic_Commerce_API;
+namespace WPAgenticCommerce\Core;
+use WPAgenticCommerce\Core\WP_AC_Register_API_Endpoints;
+use WPAgenticCommerce\Helpers\WP_AC_WC_Meta_Fields;
 
 if ( ! defined( 'ABSPATH' ) ) exit;
 
-class WP_Agentic_Commerce_Plugin {
+class WP_AC_Plugin {
 
     public function __construct() {
         $this->enqueue_admin_styles();
@@ -23,7 +24,7 @@ class WP_Agentic_Commerce_Plugin {
     private function enqueue_admin_styles() {
         wp_enqueue_style(
             'agentic-commerce-admin-style',
-            plugin_dir_url(__FILE__) . '../assets/css/agentic-commerce-style.css',
+            plugin_dir_url(__FILE__) . '../../assets/css/agentic-commerce-style.css',
             [],
         '1.0.0'
         );
@@ -32,17 +33,18 @@ class WP_Agentic_Commerce_Plugin {
     private function init_hooks() {
         // Hook to initiazize API Layer
         add_action( 'init', function() {
-            new WP_Agentic_Commerce_API();
+            new WP_AC_Register_API_Endpoints();
         });
 
         // Hook to initialize custom Woocommerce meta fields
         add_action('init', function() {
-            new WP_Agentic_Commerce_Meta_Fields();
+            new WP_AC_WC_Meta_Fields();
         });
     }   
 
     // Initialize all hooks for the plugin (you may add more hooks to extend functionality)
     public function run() {
+        
         $this->register_admin_hooks();
     }
 
