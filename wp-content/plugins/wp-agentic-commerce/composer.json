@@ -1,7 +1,9 @@
 {
   "autoload": {
     "psr-4": {
-      "WPAgenticCommerce\\": "includes/"
+      "WPAgenticCommerce\\Core\\": "includes/core",
+      "WPAgenticCommerce\\Helpers\\": "includes/helpers",
+       "WPAgenticCommerce\\Controllers\\": "includes/controllers"
     }
   }
 }

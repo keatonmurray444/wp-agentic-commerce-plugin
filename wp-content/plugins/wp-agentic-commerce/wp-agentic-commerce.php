@@ -20,7 +20,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 // Define namespace
-use WPAgenticCommerce\WP_Agentic_Commerce_Plugin;
+use WPAgenticCommerce\Core\WP_AC_Plugin;
 
 // Define constants
 define( 'MY_PLUGIN_VERSION', '1.0.0' );
@@ -33,8 +33,13 @@ require_once MY_PLUGIN_PATH . 'vendor/autoload.php';
 /**
  * Initialize the plugin
  */
+
+if (!class_exists('WPAgenticCommerce\Core\WP_AC_Plugin')) {
+    die('Autoload failed: WP_AC_Plugin not found');
+}
+
 function my_plugin_run() {
-    $plugin = new WP_Agentic_Commerce_Plugin();
+    $plugin = new WP_AC_Plugin();
     $plugin->run();
 }
 

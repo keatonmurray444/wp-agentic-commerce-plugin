@@ -6,5 +6,7 @@ $vendorDir = dirname(__DIR__);
 $baseDir = dirname($vendorDir);
 
 return array(
-    'WPAgenticCommerce\\Includes' => array($baseDir . '/includes'),
+    'WPAgenticCommerce\\Helpers\\' => array($baseDir . '/includes/helpers'),
+    'WPAgenticCommerce\\Core\\' => array($baseDir . '/includes/core'),
+    'WPAgenticCommerce\\Controllers\\' => array($baseDir . '/includes/controllers'),
 );
