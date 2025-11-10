@@ -38,6 +38,7 @@ namespace WPAgenticCommerce\Core;
 use WPAgenticCommerce\Controllers\WP_AC_Product_Feed_Controller;
 use WPAgenticCommerce\Controllers\WP_AC_Delegate_Payment_Controller;
 use WPAgenticCommerce\Controllers\WP_AC_Agentic_Checkout_Controller;
+use WP_Error;
 
 if ( ! defined( 'ABSPATH' ) ) exit;
 
@@ -68,6 +69,12 @@ class WP_AC_Register_API_Endpoints {
         register_rest_route('agentic-commerce/v1', '/checkout_sessions', [
             'methods' => 'POST',
             'callback' => [ WP_AC_Agentic_Checkout_Controller::class, 'create_checkout_session' ],
+            'permission_callback' => '__return_true',
+        ]);
+
+        register_rest_route('agentic-commerce/v1', '/simulate-payment', [
+            'methods' => 'POST',
+            'callback' => [ WP_AC_Agentic_Checkout_Controller::class, 'simulate_payment' ],
             'permission_callback' => '__return_true',
         ]);
     }
