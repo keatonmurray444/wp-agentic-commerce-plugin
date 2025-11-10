@@ -1,18 +1,64 @@
 <?php
 
+/**
+ * WP_AC_Delegate_Payment_Controller
+ *
+ * Handles the "Delegate Payment" REST API endpoint for WooCommerce.
+ * This controller allows external applications, such as ChatGPT plugins,
+ * to create WooCommerce orders programmatically and generate a checkout
+ * URL for delegated payment.
+ *
+ * Features:
+ * - Validates incoming JSON POST payload (items, customer, currency, return_url).
+ * - Checks for product existence and available stock.
+ * - Sanitizes and prepares order data.
+ * - Creates a WooCommerce order with items, currency, and customer email.
+ * - Saves raw payload for debugging or tracking purposes.
+ * - Sets initial order status as "pending payment".
+ * - Calculates totals and persists the order.
+ * - Generates a checkout URL for payment completion.
+ * - Returns JSON response including:
+ *     - ok (boolean)
+ *     - order_id (integer)
+ *     - payment_url (string)
+ *
+ * Payload example (Postman):
+ * {
+ *   "items": [{"id":13,"quantity":1,"price":85}],
+ *   "currency": "USD",
+ *   "customer": {"email": "test@example.com"},
+ *   "return_url": "https://example.com/thank-you"
+ * }
+ * 
+ * Payload example (cURL): 
+ * curl -X POST http://localhost:8000/wp-json/agentic-commerce/v1/delegate-payment \
+ * -H "Content-Type: application/json" \
+ * -d '{
+ *   "items": [{"id":13,"quantity":1,"price":85}],
+ *  "currency":"USD",
+ *  "customer":{"email":"test@example.com"},
+ *  "return_url":"http://localhost:8000/thank-you"
+ *}'
+ *
+ *
+ * Example usage:
+ *   POST /wp-json/agentic-commerce/v1/delegate-payment
+ *   Headers: Content-Type: application/json
+ *
+ * Notes:
+ * - Optional fields: currency, customer.email, return_url
+ * - Validates stock if product manages inventory
+ * - Returns WP_Error for invalid payloads or insufficient stock
+ *
+ * @package WPAgenticCommerce\Controllers
+ */
+
 namespace WPAgenticCommerce\Controllers; 
 use WP_REST_Request;
 
 if ( ! defined('ABSPATH') ) exit;
 
 class WP_AC_Delegate_Payment_Controller {
-        /**
-     * Delegate Payment logic does the following things 
-     * - Validates POST request payload
-     * - Create Woo order or cart (redirects users to the actual website's checkout page)
-     * - Generates checkout URL
-     * - Return JSON response
-     */
     public static function delegate_payment( WP_REST_Request $request ) {
         $validated = self::validate_delegate_payment_payload( $request );
         if ( is_wp_error( $validated ) ) {

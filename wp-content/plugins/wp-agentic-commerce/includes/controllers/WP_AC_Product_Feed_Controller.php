@@ -1,5 +1,36 @@
 <?php
 
+/**
+ * WP_AC_Product_Feed_Controller
+ *
+ * Handles the REST API endpoint for serving WooCommerce product data
+ * in a structured schema suitable for external integrations, including
+ * ChatGPT or other third-party applications.
+ *
+ * Features:
+ * - Retrieves all published WooCommerce products.
+ * - Returns detailed product information including:
+ *     - Basic data (ID, title, description, permalink, identifiers)
+ *     - Pricing and sale information
+ *     - Media assets (images, videos, 3D models)
+ *     - Inventory and availability
+ *     - Store details (seller info)
+ *     - Item-specific attributes (condition, brand, material, age group)
+ *     - Shipping dimensions, weight, and delivery estimates
+ *     - Return policies
+ *     - Performance signals (popularity, return rate)
+ *     - Compliance information (warnings, age restrictions)
+ *     - Reviews and ratings
+ *     - Related products and relationships
+ *     - Geotagged pricing and availability
+ * - Includes flags for enabling search and checkout features.
+ *
+ * Example usage:
+ *   GET /wp-json/agentic-commerce/v1/products
+ *
+ * @package WPAgenticCommerce\Controllers
+ */
+
 namespace WPAgenticCommerce\Controllers; 
 use WP_REST_Request;
 
