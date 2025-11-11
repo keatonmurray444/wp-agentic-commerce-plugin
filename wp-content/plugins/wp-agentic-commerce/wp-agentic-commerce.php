@@ -2,7 +2,7 @@
 
 /*
  * Plugin Name:       WP Agentic Commerce
- * Description:       This plugin is to handle API Endpoints to allow product display on ChatGPT
+ * Description:       Integrates your WooCommerce store with ChatGPT's Agentic Commerce Protocol, enabling product discovery, instant checkout, and API endpoints for seamless product display in ChatGPT.
  * Version:           1.0.0
  * Requires at least: 5.2
  * Requires PHP:      8.3
@@ -10,7 +10,7 @@
  * License:           GPL v2 or later
  * License URI:       https://www.gnu.org/licenses/gpl-2.0.html
  * Update URI:        https://example.com/my-plugin/
- * Text Domain:       my-basics-plugin
+ * Text Domain:       wp-agentic-commerce
  * Domain Path:       /languages
  */
 

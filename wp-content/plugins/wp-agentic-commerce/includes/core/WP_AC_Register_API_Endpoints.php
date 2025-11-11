@@ -71,7 +71,6 @@ class WP_AC_Register_API_Endpoints {
             'callback' => [ WP_AC_Agentic_Checkout_Controller::class, 'create_checkout_session' ],
             'permission_callback' => '__return_true',
         ]);
-
         register_rest_route('agentic-commerce/v1', '/simulate-payment', [
             'methods' => 'POST',
             'callback' => [ WP_AC_Agentic_Checkout_Controller::class, 'simulate_payment' ],
