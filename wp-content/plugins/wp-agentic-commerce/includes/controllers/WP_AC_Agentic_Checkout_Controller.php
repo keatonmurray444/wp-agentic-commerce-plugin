@@ -23,9 +23,6 @@
  * Example payload:
  * {
  *   "items": [{"id": 13, "quantity": 1, "price": 85}],
- *   "currency": "USD",
- *   "customer": {"email": "test@example.com"},
- *   "return_url": "https://example.com/thank-you"
  * }
  *
  * @package WPAgenticCommerce\Controllers
@@ -36,28 +33,55 @@ use WP_REST_Request;
 use WP_Error;
 
 class WP_AC_Agentic_Checkout_Controller {
-    /**
-     * Create a checkout session for Agentic Commerce.
-     *
-     * Expected payload:
-     * {
-     *   "items": [{"id":13,"quantity":1,"price":85}],
-     *   "currency":"USD",
-     *   "customer":{"email":"test@example.com"},
-     *   "return_url":"http://localhost:8000/thank-you"
-     * }
-     */
+
     public static function create_checkout_session(WP_REST_Request $request) {
-        $data = $request->get_json_params(); 
+
+        // --------------------------
+        // Step 0: Read headers
+        // --------------------------
+        $auth_header   = $request->get_header('authorization');       
+        $idempotency   = $request->get_header('idempotency-key');    
+        $request_id    = $request->get_header('request-id');         
+        $timestamp     = $request->get_header('timestamp');          
+        $signature     = $request->get_header('signature');          
+        $api_version   = $request->get_header('api-version');        
+
+        // Optional: validate Authorization
+        if (!$auth_header || !preg_match('/Bearer\s+(\S+)/', $auth_header, $matches)) {
+            return new WP_Error('unauthorized', 'Missing or invalid Authorization header.', ['status' => 401]);
+        }
+
+        $api_key = $matches[1];
+
+        // Optional: check Idempotency-Key to prevent duplicates
+        if ($idempotency) {
+            $existing = wc_get_orders([
+                'limit' => 1,
+                'meta_key' => '_idempotency_key',
+                'meta_value' => $idempotency
+            ]);
+            if (!empty($existing)) {
+                $order = $existing[0];
+                return rest_ensure_response([
+                    'id' => 'checkout_session_' . $order->get_id(),
+                    'status' => 'ready_for_payment', 
+                    'checkout_url' => $order->get_checkout_payment_url(true),
+                    'message' => 'Duplicate request ignored via Idempotency-Key'
+                ]);
+            }
+        }
+
+        // --------------------------
+        // Step 1: Parse payload
+        // --------------------------
+        $data = $request->get_json_params();
 
         if (empty($data['items']) || !is_array($data['items'])) {
             return new WP_Error('missing_items', 'You must provide at least one item.', ['status' => 400]);
         }
 
         $validated_items = [];
-
         foreach ($data['items'] as $index => $item) {
-
             if (empty($item['id']) || !is_numeric($item['id'])) {
                 return new WP_Error('invalid_item_id', "Item at index {$index} must have a numeric ID.", ['status' => 400]);
             }
@@ -68,7 +92,7 @@ class WP_AC_Agentic_Checkout_Controller {
             }
 
             $quantity = isset($item['quantity']) ? max(1, (int)$item['quantity']) : 1;
-            $price = isset($item['price']) ? (float)$item['price'] : null;
+            $price = isset($item['price']) ? (float)$item['price'] : (float)$product->get_price();
 
             $validated_items[] = [
                 'product'  => $product,
@@ -80,6 +104,7 @@ class WP_AC_Agentic_Checkout_Controller {
         $currency = !empty($data['currency']) ? strtoupper(sanitize_text_field($data['currency'])) : get_woocommerce_currency();
         $customer_email = !empty($data['customer']['email']) ? sanitize_email($data['customer']['email']) : null;
         $return_url = !empty($data['return_url']) ? esc_url_raw($data['return_url']) : null;
+        $fulfillment_address = !empty($data['fulfillment_address']) ? $data['fulfillment_address'] : null;
 
         // --------------------------
         // Step 2: Create WooCommerce Order
@@ -89,7 +114,7 @@ class WP_AC_Agentic_Checkout_Controller {
         foreach ($validated_items as $item) {
             $product = $item['product'];
             $qty = $item['quantity'];
-            $item_price = $item['price'] ?? (float)$product->get_price();
+            $item_price = $item['price'];
 
             $order->add_product($product, $qty, [
                 'subtotal' => $item_price * $qty,
@@ -97,76 +122,115 @@ class WP_AC_Agentic_Checkout_Controller {
             ]);
         }
 
-        // Set currency
-        if ($currency) {
-            $order->set_currency($currency);
-        }
-
-        // Set customer email
+        $order->set_currency($currency);
         if ($customer_email) {
             $order->set_billing_email($customer_email);
         }
 
-        // Store raw payload for debugging
+        if ($idempotency) $order->update_meta_data('_idempotency_key', $idempotency);
+        if ($request_id) $order->update_meta_data('_request_id', $request_id);
         $order->update_meta_data('_agentic_raw_payload', wp_json_encode($data));
 
-        // Set initial status
         $order->set_status('pending');
         $order->calculate_totals();
         $order->save();
 
-        // Generate checkout/payment URL
         $checkout_url = $order->get_checkout_payment_url(true);
 
-        // Return structured JSON
-        return rest_ensure_response([
-            'ok'           => true,
-            'order_id'     => $order->get_id(),
-            'checkout_url' => $checkout_url,
-            'return_url'   => $return_url,
-        ]);
-    }
-
-    /**
-     * Marks a WooCommerce order as completed.
-     *
-     * Accepts a POST request with the order ID, updates the order status to 'completed',
-     * and returns the updated order status.
-     *
-     * Expected POST payload (JSON):
-     * {
-     *   "order_id": 123   // ID of the WooCommerce order to mark as completed
-     * }
-     *
-     * Example cURL request:
-     * curl -X POST http://localhost:8000/wp-json/agentic-commerce/v1/simulate-payment \
-     *      -H "Content-Type: application/json" \
-     *      -d '{"order_id":123}'
-     *
-     * Response JSON:
-     * {
-     *   "ok": true,
-     *   "order_id": 123,
-     *   "status": "completed"
-     * }
-     *
-     * @param WP_REST_Request $request The REST request object containing 'order_id'.
-     * @return WP_REST_Response|WP_Error REST response with updated order status.
-     */
-    public static function simulate_payment(WP_REST_Request $request) {
-        $order_id = (int) $request->get_param('order_id');
-        $order = wc_get_order($order_id);
-
-        if (!$order) {
-            return new WP_Error('order_not_found', 'Order not found.', ['status' => 404]);
+        // --------------------------
+        // Step 3: Build line items response
+        // --------------------------
+        $line_items_response = [];
+        foreach ($validated_items as $index => $item) {
+            $line_items_response[] = [
+                'id' => 'line_item_' . $item['product']->get_id(),
+                'item' => [
+                    'id' => $item['product']->get_id(),
+                    'quantity' => $item['quantity']
+                ],
+                'base_amount' => $item['price'] * $item['quantity'],
+                'discount' => 0, // static for now, this can be set via Woocommerce config dynamically
+                'subtotal' => 0,
+                'tax' => 0, // static for now, this can be set via Woocommerce config dynamically
+                'total' => $item['price'] * $item['quantity']
+            ];
         }
 
-        $order->update_status('completed', 'Payment simulated for testing.');
+        // --------------------------
+        // Step 4: Build messages
+        // --------------------------
+        $messages = [];
+        if (!$fulfillment_address) {
+            $messages[] = [
+                'type' => 'error',
+                'code' => 'missing_fulfillment_address',
+                'path' => '$.fulfillment_address',
+                'content_type' => 'plain',
+                'content' => 'No fulfillment address provided. Checkout cannot be completed yet.'
+            ];
+        }
 
-        return rest_ensure_response([
-            'ok' => true,
-            'order_id' => $order_id,
-            'status' => $order->get_status(),
-        ]);
+        foreach ($validated_items as $index => $item) {
+            if (!$item['product']->is_in_stock()) {
+                $messages[] = [
+                    'type' => 'error',
+                    'code' => 'out_of_stock',
+                    'path' => '$.line_items[' . $index . ']',
+                    'content_type' => 'plain',
+                    'content' => 'This item is not available for sale.'
+                ];
+            }
+        }
+
+        // --------------------------
+        // Step 5: Calculate dynamic totals
+        // --------------------------
+        $items_base_amount = 0;
+        foreach ($order->get_items() as $item) {
+            $items_base_amount += $item->get_total();
+        }
+
+        $tax_amount = $order->get_total_tax();
+        $fulfillment_amount = $fulfillment_address ? 100 : 0; // example fee - We can make this dynamic via Woocommerce Dashboard
+        $total_amount = $items_base_amount + $tax_amount + $fulfillment_amount;
+
+        $totals = [
+            ['type'=>'items_base_amount','display_text'=>'Item(s) total','amount'=>$items_base_amount],
+            ['type'=>'subtotal','display_text'=>'Subtotal','amount'=>$items_base_amount],
+            ['type'=>'tax','display_text'=>'Tax','amount'=>$tax_amount],
+            ['type'=>'fulfillment','display_text'=>'Fulfillment','amount'=>$fulfillment_amount],
+            ['type'=>'total','display_text'=>'Total','amount'=>$total_amount]
+        ];
+
+        // --------------------------
+        // Step 6: Determine status
+        // --------------------------
+        $status = $fulfillment_address ? 'ready_for_payment' : 'not_ready_for_payment';
+
+        // --------------------------
+        // Step 7: Build final response
+        // --------------------------
+        $response = [
+            'id' => 'checkout_session_' . $order->get_id(),
+            'payment_provider' => [
+                'provider' => 'stripe',
+                'supported_payment_methods' => ['card']
+            ],
+            'status' => $status,
+            'currency' => strtolower($currency),
+            'line_items' => $line_items_response,
+            'fulfillment_address' => $fulfillment_address,
+            'fulfillment_option_id' => 'fulfillment_option_123',
+            'totals' => $totals,
+            'fulfillment_options' => [],
+            'messages' => $messages,
+            'links' => [
+                ['type'=>'terms_of_use','url'=>'https://www.testshop.com/legal/terms-of-use']
+            ],
+            'checkout_url' => $checkout_url,
+            'return_url' => $return_url
+        ];
+
+        return rest_ensure_response($response);
     }
 }
