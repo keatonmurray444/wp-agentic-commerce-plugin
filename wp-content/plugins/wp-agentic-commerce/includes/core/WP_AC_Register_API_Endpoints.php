@@ -72,6 +72,11 @@ class WP_AC_Register_API_Endpoints {
             'permission_callback' => '__return_true',
         ]);
 
-
+        // Register Agentic Checkout Update Sessions URL
+        register_rest_route('agentic-commerce/v1', '/checkout_sessions/(?P<checkout_session_id>[\d\w-]+)', [
+            'methods'             => 'POST',
+            'callback'            => [ WP_AC_Agentic_Checkout_Controller::class, 'update_checkout_session' ],
+            'permission_callback' => '__return_true',
+        ]);
     }
 }

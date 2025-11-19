@@ -1,32 +1,68 @@
 <?php
-
 /**
- * WP_AC_Agentic_Checkout_Controller
- *
- * Handles the creation of checkout sessions for the WP Agentic Commerce plugin.
- * This controller provides a REST API endpoint to initialize a payment session
- * for a WooCommerce order, enabling users to complete payments within ChatGPT
- * or other external applications without leaving the chat interface.
- *
- * Responsibilities:
- * - Validate incoming request payload for checkout creation.
- * - Create WooCommerce orders based on requested items and customer details.
- * - Generate a payment session using a supported gateway (e.g., Stripe, PayPal).
- * - Return structured JSON response containing:
- *     - order ID
- *     - payment session information (session ID, gateway type, publishable key)
- * - Ensure security and data validation for all checkout requests.
- *
- * Example endpoint:
- *   POST /wp-json/agentic-commerce/v1/checkout_sessions
- *
- * Example payload:
- * {
- *   "items": [{"id": 13, "quantity": 1, "price": 85}],
- * }
- *
- * @package WPAgenticCommerce\Controllers
- */
+* WP_AC_Agentic_Checkout_Controller
+*
+* Handles the full lifecycle of Agentic Commerce Protocol (ACP) checkout sessions
+* for the WP Agentic Commerce plugin.
+*
+* This controller manages three major checkout operations:
+*
+* 1. **Create Checkout Session**
+* - Initializes a new checkout session when a user expresses purchase intent.
+* - Validates the incoming payload (items, quantities, pricing).
+* - Creates or prepares a WooCommerce order draft.
+* - Returns a structured checkout session object containing:
+* - session ID
+* - order draft data
+* - totals (subtotal, tax, shipping, discounts)
+* - available fulfillment options
+* - current checkout state (e.g., requires_shipping_address)
+*
+* 2. **Update Checkout Session**
+* - Handles user-driven changes during the ACP checkout flow.
+* - Triggered when ChatGPT calls:
+* POST /checkout_sessions/{checkout_session_id}
+* - Updates the checkout session when the user modifies:
+* - items in the cart
+* - shipping method or address
+* - fulfillment preferences
+* - discounts or vouchers
+* - Returns the full updated checkout session object including:
+* - recalculated totals
+* - updated fulfillment or payment options
+* - next required state
+* - validation errors (if any)
+*
+* 3. **Complete Checkout Session**
+* - Finalizes the checkout once the user clicks "Buy" inside ChatGPT.
+* - Confirms payment, completes the WooCommerce order, and marks the
+* checkout session as finalized.
+* - Returns:
+* - final order ID
+* - confirmation message
+* - any additional post-checkout metadata
+*
+* Responsibilities Summary:
+* - Maintain checkout session state across the ACP flow.
+* - Validate all incoming user modifications.
+* - Generate WooCommerce orders and process payment or confirmation.
+* - Serve fully structured ACP-compliant JSON responses.
+*
+* Example create endpoint:
+* POST /wp-json/agentic-commerce/v1/checkout_sessions
+*
+* Example update endpoint:
+* POST /wp-json/agentic-commerce/v1/checkout_sessions/{session_id}
+*
+* Example payload:
+* {
+*   "items": [
+*       {"id": 13, "quantity": 1, "price": 85}
+*    ]
+* }
+*
+* @package WPAgenticCommerce\Controllers
+*/
 
 namespace WPAgenticCommerce\Controllers;
 use WP_REST_Request;
@@ -64,7 +100,7 @@ class WP_AC_Agentic_Checkout_Controller {
                 $order = $existing[0];
                 return rest_ensure_response([
                     'id' => 'checkout_session_' . $order->get_id(),
-                    'status' => 'ready_for_payment', 
+                    'status' => 'processing_for_payment', 
                     'checkout_url' => $order->get_checkout_payment_url(true),
                     'message' => 'Duplicate request ignored via Idempotency-Key'
                 ]);
@@ -232,5 +268,9 @@ class WP_AC_Agentic_Checkout_Controller {
         ];
 
         return rest_ensure_response($response);
+    }
+
+    public static function update_checkout_session( WP_REST_Request $request ) {
+        $session_id = $request->get_param('checkout_session_id');
     }
 }
