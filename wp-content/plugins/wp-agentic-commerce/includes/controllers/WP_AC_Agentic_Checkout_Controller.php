@@ -352,11 +352,57 @@ class WP_AC_Agentic_Checkout_Controller {
         return new WP_REST_Response($data, 200);
     }
 
-    public static function complete_checkout_session( WP_REST_Request $request ) {
+    public static function complete_checkout_session(WP_REST_Request $request) {
+        $session_id = $request->get_param('checkout_session_id');
+        $api_key = defined('OPENAI_API_KEY') ? OPENAI_API_KEY : '';
 
-    } 
+        if (empty($session_id)) {
+            return new WP_REST_Response([
+                'error' => 'Missing checkout_session_id'
+            ], 400);
+        }
+
+        // Mock mode for local testing
+        $mock = true;
+        if ($mock) {
+            return new WP_REST_Response([
+                'session_id' => $session_id,
+                'status' => 'completed',
+                'mock' => true
+            ], 200);
+        }
+
+        $api_url = "https://api.openai.com/v1/commerce/checkout_sessions/{$session_id}/complete";
+
+        $response = wp_remote_post($api_url, [
+            'headers' => [
+                'Authorization' => 'Bearer ' . $api_key,
+                'Content-Type'  => 'application/json',
+            ],
+            'timeout' => 15,
+            'sslverify' => true,
+        ]);
+
+        if (is_wp_error($response)) {
+            return new WP_REST_Response([
+                'error' => $response->get_error_message()
+            ], 500);
+        }
+
+        $body = wp_remote_retrieve_body($response);
+        $data = json_decode($body, true);
+
+        if ($data === null) {
+            return new WP_REST_Response([
+                'error' => 'Failed to decode OpenAI response',
+                'raw_body' => $body
+            ], 500);
+        }
+
+        return new WP_REST_Response($data, 200);
+    }
 
     public static function cancel_checkout_session( WP_Rest_Request $request ) {
-        
+
     }
 }
