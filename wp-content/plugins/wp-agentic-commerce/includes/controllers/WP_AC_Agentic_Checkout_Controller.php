@@ -66,6 +66,7 @@
 
 namespace WPAgenticCommerce\Controllers;
 use WP_REST_Request;
+use WP_REST_Response;
 use WP_Error;
 
 class WP_AC_Agentic_Checkout_Controller {
@@ -272,5 +273,90 @@ class WP_AC_Agentic_Checkout_Controller {
 
     public static function update_checkout_session( WP_REST_Request $request ) {
         $session_id = $request->get_param('checkout_session_id');
+        $api_key = defined('OPENAI_API_KEY') ? OPENAI_API_KEY : '';
+
+        // Fail early if API key missing
+        if (empty($api_key)) {
+            return new WP_REST_Response([
+                'error' => 'OpenAI API key not set.'
+            ], 500);
+        }
+
+        // Collect fields
+        $line_items = $request->get_param('line_items');
+        $fulfillment_address = $request->get_param('fulfillment_address');
+        $fulfillment_option_id = $request->get_param('fulfillment_option_id');
+        $buyer = $request->get_param('buyer');
+
+        // Build payload
+        $payload = [];
+        if (!empty($line_items)) {
+            $payload['line_items'] = $line_items;
+        }
+        if (!empty($fulfillment_address)) {
+            $payload['fulfillment_address'] = $fulfillment_address;
+        }
+        if (!empty($fulfillment_option_id)) {
+            $payload['fulfillment_option_id'] = $fulfillment_option_id;
+        }
+        if (!empty($buyer)) {
+            $payload['buyer'] = $buyer;
+        }
+
+        // If you want to test locally without hitting OpenAI, enable mock mode
+        $mock = true; // set true for local testing
+        if ($mock) {
+            return new WP_REST_Response([
+                'session_id' => $session_id,
+                'payload_sent' => $payload,
+                'mock' => true
+            ], 200);
+        }
+
+        $api_url = "https://api.openai.com/v1/commerce/checkout_sessions/{$session_id}";
+
+        $response = wp_remote_request($api_url, [
+            'method'  => 'PATCH',
+            'headers' => [
+                'Authorization' => 'Bearer ' . $api_key,
+                'Content-Type'  => 'application/json',
+            ],
+            'body' => wp_json_encode($payload),
+            'sslverify' => true,
+            'timeout' => 15,
+        ]);
+
+        // Check for HTTP / network errors
+        if (is_wp_error($response)) {
+            error_log('OpenAI request error: ' . $response->get_error_message());
+            return new WP_REST_Response([
+                'error' => $response->get_error_message()
+            ], 500);
+        }
+
+        // Log full response for debugging
+        error_log('OpenAI response: ' . print_r($response, true));
+
+        $body = wp_remote_retrieve_body($response);
+        $data = json_decode($body, true);
+
+        // If decoding fails, log raw body
+        if ($data === null) {
+            error_log('OpenAI raw body: ' . $body);
+            return new WP_REST_Response([
+                'error' => 'Failed to decode OpenAI response',
+                'raw_body' => $body
+            ], 500);
+        }
+
+        return new WP_REST_Response($data, 200);
+    }
+
+    public static function complete_checkout_session( WP_REST_Request $request ) {
+
+    } 
+
+    public static function cancel_checkout_session( WP_Rest_Request $request ) {
+        
     }
 }

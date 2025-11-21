@@ -73,9 +73,23 @@ class WP_AC_Register_API_Endpoints {
         ]);
 
         // Register Agentic Checkout Update Sessions URL
-        register_rest_route('agentic-commerce/v1', '/checkout_sessions/(?P<checkout_session_id>[\d\w-]+)', [
-            'methods'             => 'POST',
-            'callback'            => [ WP_AC_Agentic_Checkout_Controller::class, 'update_checkout_session' ],
+        register_rest_route('agentic-commerce/v1', '/checkout_sessions/(?P<checkout_session_id>[\w-]+)', [
+            'methods' => 'PATCH',
+            'callback' => [ WP_AC_Agentic_Checkout_Controller::class, 'update_checkout_session' ],
+            'permission_callback' => '__return_true',
+        ]);
+
+        // Register Agentic Checkout Complete Payment Sessions URL
+        register_rest_route('agentic-commerce/v1', '/checkout_sessions/(?P<checkout_session_id>[\w-]+)/complete', [
+            'methods' => 'POST',
+            'callback' => [ WP_AC_Agentic_Checkout_Controller::class, 'complete_checkout_session' ],
+            'permission_callback' => '__return_true',
+        ]);
+
+        // Register Agentic Checkout Cancel Payment Sessions URL
+        register_rest_route('agentic-commerce/v1', '/checkout_sessions/(?P<checkout_session_id>[\w-]+)/cancel', [
+            'methods' => 'POST',
+            'callback' => [ WP_AC_Agentic_Checkout_Controller::class, 'cancel_checkout_session' ],
             'permission_callback' => '__return_true',
         ]);
     }
